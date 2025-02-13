@@ -39,14 +39,6 @@ export const loginController = async (body: LoginBodyType) => {
   // Tính toán thời gian hết hạn của session
   const expiresAt = addMilliseconds(new Date(), ms(envConfig.SESSION_TOKEN_EXPIRES_IN as StringValue))
 
-  // Lưu session vào database
-  // await pool
-  //   .request()
-  //   .input('accountId', sql.Int, account.id)
-  //   .input('token', sql.NVarChar(255), sessionToken)
-  //   .input('expiresAt', sql.DateTime, expiresAt)
-  //   .query(`INSERT INTO Sessions (accountId, token, expiresAt) VALUES (@accountId, @token, @expiresAt)`)
-
   return {
     account,
     session: {

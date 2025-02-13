@@ -19,9 +19,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import LoginAnimationPage from "./login-animation";
-import envConfig from "@/config";
 import { LoginBody, LoginBodyType } from "@/schemaValidations/auth.schema";
-import { useAppContext } from "@/app/appProvider";
+import authApiRequests from "@/apiRequests/auth";
+import { handleErrorApi } from "@/lib/utils";
 
 const FormSchema = z.object({
   username: z.string().min(5, {
@@ -35,7 +35,6 @@ export function LoginComponent() {
   const [isPageLoaded, setIsPageLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  // const { setSessionToken } = useAppContext();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -54,29 +53,12 @@ export function LoginComponent() {
   });
 
   async function onSubmit(values: LoginBodyType) {
+    if (isLoading) return;
     setIsLoading(true);
     try {
-      const result = await fetch(
-        `${envConfig.NEXT_PUBLIC_API_ENDPOINT}/auth/login`,
-        {
-          body: JSON.stringify(values),
-          headers: {
-            "Content-Type": "application/json",
-          },
-          method: "POST",
-        }
-      ).then(async (res) => {
-        const payload = await res.json();
-        const data = {
-          status: res.status,
-          payload,
-        };
-        if (!res.ok) {
-          throw data;
-        }
-        return data;
-      });
-      localStorage.setItem("sesstionToken", result.payload.data.token);
+      // const result = await authApiRequests.login(values);
+      const result = await authApiRequests.auththentication(values);
+      // localStorage.setItem("sessionToken", result.payload.data.token);
       if (values.rememberMe) {
         localStorage.setItem("rememberMe", "true");
         localStorage.setItem(
@@ -95,49 +77,14 @@ export function LoginComponent() {
           color: "#0066ff",
         },
       });
+      // await authApiRequests.auth({
+      //   sessionToken: result.payload.data.token,
+      // });
 
-      const resultFromNextServer = await fetch("/api/login", {
-        method: "POST",
-        body: JSON.stringify(result),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }).then(async (res) => {
-        const payload = await res.json();
-        const data = {
-          status: res.status,
-          payload,
-        };
-        if (!res.ok) {
-          throw data;
-        }
-        return data;
-      });
-
-      // setSessionToken(resultFromNextServer.payload.data.token);
+      router.push("/");
     } catch (error: any) {
-      const errors = error.payload.errors as {
-        field: string;
-        message: string;
-      }[];
-      const status = error.status as number;
-      if (status === 422) {
-        errors.forEach((error) => {
-          form.setError((error.field as "personID") || "password", {
-            type: "server",
-            message: error.message,
-          });
-        });
-      } else {
-        toast.error(error.message, {
-          description: "Vui lòng kiểm tra lại thông tin đăng nhập",
-          position: "top-right",
-          style: {
-            backgroundColor: "#FFFFFF",
-            color: "#ff1a1a",
-          },
-        });
-      }
+      // console.log(error.payload.errors);
+      handleErrorApi({ error, setError: form.setError });
     } finally {
       setIsLoading(false);
     }

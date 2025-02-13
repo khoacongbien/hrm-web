@@ -9,23 +9,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAppContext } from "@/app/appProvider";
 import jwt from "jsonwebtoken";
+import { clientSessionToken } from "@/lib/http";
 
 export default function AvartarComponent() {
-  let imgsrc = null;
-  let name = "";
-  let department = "";
-
-  const sessionToken = useAppContext();
-  if (sessionToken) {
-    const decode: any = jwt.decode(sessionToken.sessionToken);
-    imgsrc = decode.imgsrc;
-    name = decode.name;
-    department = decode.departmentId;
-  }
+  const [infor, setInfor] = useState({
+    imgsrc: "",
+    name: "",
+    department: "",
+  });
+  useState(() => {});
+  useEffect(() => {
+    const decode: any = jwt.decode(clientSessionToken.value);
+    setInfor({
+      imgsrc: decode.imgsrc,
+      name: decode.name,
+      department: decode.departmentId,
+    });
+  }, []);
 
   const router = useRouter();
   const handleLogout = useCallback(() => {
@@ -45,7 +48,7 @@ export default function AvartarComponent() {
         <div className="flex justify-center items-center h-full w-[180px] gap-4 cursor-pointer hover:bg-gray-200 rounded-sm">
           <Avatar className="w-9 h-9">
             <AvatarImage
-              src={imgsrc}
+              src={infor.imgsrc}
               alt="avartar"
               className="rounded-full w-9 h-9"
             />
@@ -53,9 +56,11 @@ export default function AvartarComponent() {
           </Avatar>
           <div className="flex flex-col">
             <span className="text-xs leading-3 text-blue-600 font-semibold">
-              {name}
+              {infor.name}
             </span>
-            <span className="text-[10px]  text-blue-600">{department}</span>
+            <span className="text-[10px]  text-blue-600">
+              {infor.department}
+            </span>
           </div>
         </div>
       </DropdownMenuTrigger>

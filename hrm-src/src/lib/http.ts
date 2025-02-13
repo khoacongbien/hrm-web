@@ -1,12 +1,27 @@
+"use client";
 import envConfig from "@/config";
-import { stat } from "fs";
-import { get } from "http";
+import { LoginResType } from "@/schemaValidations/auth.schema";
 
-type CustomOptions = RequestInit & { baseUrl?: string | undefined };
+type CustomOptions = Omit<RequestInit, "method"> & {
+  baseUrl?: string | undefined;
+};
 
-class HttpError extends Error {
+const ENTITY_ERROR_STATUS = 422;
+
+type EntityErrorPayload = {
+  message: string;
+  errors: {
+    field: string;
+    message: string;
+  }[];
+};
+
+export class HttpError extends Error {
   status: number;
-  payload: any;
+  payload: {
+    message: string;
+    [key: string]: any;
+  };
 
   constructor({ status, payload }: { status: number; payload: any }) {
     super("Http Error");
@@ -14,6 +29,37 @@ class HttpError extends Error {
     this.payload = payload;
   }
 }
+
+export class EntityError extends HttpError {
+  status: 422;
+  payload: EntityErrorPayload;
+  constructor({
+    status,
+    payload,
+  }: {
+    status: 422;
+    payload: EntityErrorPayload;
+  }) {
+    super({ status, payload });
+    this.status = status;
+    this.payload = payload;
+  }
+}
+
+class SessionToken {
+  private token = "";
+  get value() {
+    return this.token;
+  }
+  set value(token: string) {
+    //nếu gọi method này ở server thì sẽ bị lỗi
+    if (typeof window === "undefined")
+      throw new Error("Cannot set token on server side");
+    this.token = token;
+  }
+}
+
+export const clientSessionToken = new SessionToken();
 
 const request = async <Response>(
   method: "GET" | "POST" | "PUT" | "DELETE",
@@ -23,6 +69,9 @@ const request = async <Response>(
   const body = options?.body ? JSON.stringify(options.body) : undefined;
   const baseHeaders = {
     "Content-Type": "application/json",
+    Authorization: clientSessionToken.value
+      ? `Bearer ${clientSessionToken.value}`
+      : "",
   };
   const baseUrl =
     options?.baseUrl === undefined
@@ -44,16 +93,39 @@ const request = async <Response>(
   });
 
   const payload = await res.json();
-
   const data = {
     status: res.status,
     payload,
   };
-
-  if (!res.ok) {
-    throw new HttpError(data);
+  if (["/api/auth"].includes(url)) {
+    if (data.payload.statusCode === 422) {
+      throw new EntityError(
+        data as {
+          status: 422;
+          payload: EntityErrorPayload;
+        }
+      );
+    }
   }
 
+  if (!res.ok) {
+    if (res.status === ENTITY_ERROR_STATUS) {
+      throw new EntityError(
+        data as {
+          status: 422;
+          payload: EntityErrorPayload;
+        }
+      );
+    } else {
+      throw new HttpError(data);
+    }
+  }
+
+  if (["/api/auth"].includes(url)) {
+    clientSessionToken.value = (payload as LoginResType).data.token;
+  } else if (["auth/logout"].includes(url)) {
+    clientSessionToken.value = "";
+  }
   return data;
 };
 

@@ -7,6 +7,7 @@ import validatorCompilerPlugin from '@/plugins/validatorCompiler.plugins'
 import { errorHandlerPlugin } from '@/plugins/errorHandler.plugins'
 import envConfig, { API_URL } from '@/config'
 import authRoutes from './routers/auth.route'
+import departmentRoutes from './routers/department.route'
 
 const fastify = Fastify({
   logger: true
@@ -39,6 +40,10 @@ const start = async () => {
 
     fastify.register(authRoutes, {
       prefix: '/auth'
+    })
+
+    fastify.register(departmentRoutes, {
+      prefix: '/department'
     })
 
     await fastify.listen({
