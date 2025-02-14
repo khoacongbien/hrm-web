@@ -22,7 +22,7 @@ import LoginAnimationPage from "./login-animation";
 import { LoginBody, LoginBodyType } from "@/schemaValidations/auth.schema";
 import authApiRequests from "@/apiRequests/auth";
 import { handleErrorApi } from "@/lib/utils";
-
+import jwt from "jsonwebtoken";
 const FormSchema = z.object({
   username: z.string().min(5, {
     message: "Username must be at least 5 characters.",
@@ -46,9 +46,9 @@ export function LoginComponent() {
   const form = useForm<LoginBodyType>({
     resolver: zodResolver(LoginBody),
     defaultValues: {
-      personID: "", //localStorage.getItem("savedUsername") ?? "",
+      personID: localStorage.getItem("userId") || "",
       password: "",
-      rememberMe: false, //,
+      rememberMe: localStorage.getItem("userId") ? true : false, //,
     },
   });
 
@@ -58,16 +58,17 @@ export function LoginComponent() {
     try {
       // const result = await authApiRequests.login(values);
       const result = await authApiRequests.auththentication(values);
-      // localStorage.setItem("sessionToken", result.payload.data.token);
+      const decode: any = jwt.decode(result.payload.data.token);
+      localStorage.setItem("imgsrc", decode.imgsrc);
+      localStorage.setItem("name", decode.name);
+      localStorage.setItem("department", decode.departmentId);
+      localStorage.setItem("userId", decode.userId);
       if (values.rememberMe) {
         localStorage.setItem("rememberMe", "true");
-        localStorage.setItem(
-          "savedUsername",
-          result.payload.data.account.personID
-        );
+        localStorage.setItem("userId", decode.userId);
       } else {
         localStorage.removeItem("rememberMe");
-        localStorage.removeItem("savedUsername");
+        localStorage.removeItem("userId");
       }
       toast.success(result.payload.message, {
         description: "Chuyển hướng đến trang chính sau 1 giây",

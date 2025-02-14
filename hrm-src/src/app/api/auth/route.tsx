@@ -6,18 +6,21 @@ import { comparePassword } from "@/utils/crypto";
 import { signSessionToken } from "@/utils/jwt";
 import { addMilliseconds } from "date-fns";
 import ms from "ms";
+import { user } from "@/models/user";
 
 export async function POST(req: NextRequest) {
   const { personID, password } = await req.json();
-
-  const accountResult: any = await DatabaseService.queryFirst(`SELECT 
+  const accountResult = await DatabaseService.queryFirst<user>(
+    `SELECT 
                   personID, 
                   password, 
                   personName,
                   departmentID, 
                   'http://192.168.60.13/HRIS_PersonPhoto/' + personID + '.JPG' AS imgsrc
                FROM dbo.Data_User_App 
-               WHERE personID = '${personID}'`);
+               WHERE personID = @param0`,
+    [personID]
+  );
 
   if (!accountResult) {
     return NextResponse.json({
@@ -77,7 +80,7 @@ export async function POST(req: NextRequest) {
     {
       status: 200,
       headers: {
-        "Set-Cookie": `sessionToken = ${sessionToken}; Path=/; HttpOnly`,
+        "Set-Cookie": `sessionToken = '${sessionToken}'; Path=/; HttpOnly`,
       },
     }
   );

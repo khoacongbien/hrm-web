@@ -1,6 +1,7 @@
 export type user = {
   personID: string;
-  passWord: string;
-  name: string;
+  password: string;
+  personName: string;
+  departmentID: string;
   imgsrc: string;
 };

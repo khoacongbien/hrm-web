@@ -10,15 +10,18 @@ export function middleware(request: NextRequest) {
   console.log(pathname);
   const sessionToken = request.cookies.get("sessionToken")?.value;
 
+  const checkSessionToken =
+    sessionToken === "''" || !sessionToken ? false : true;
+
   const isPrivatePath = privatePath.some(
     (path) => pathname.startsWith(path) && !authPath.includes(pathname)
   );
 
-  if (isPrivatePath && !sessionToken) {
+  if (isPrivatePath && !checkSessionToken) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (authPath.includes(pathname) && sessionToken) {
+  if (authPath.includes(pathname) && checkSessionToken) {
     return NextResponse.redirect(new URL("/", request.url));
   }
   return NextResponse.next();

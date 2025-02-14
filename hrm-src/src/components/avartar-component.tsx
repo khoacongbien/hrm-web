@@ -9,50 +9,58 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import jwt from "jsonwebtoken";
-import { clientSessionToken } from "@/lib/http";
+import authApiRequests from "@/apiRequests/auth";
+import { getInitials, getLastTwoWords, getRandomColor } from "@/lib/utils";
 
 export default function AvartarComponent() {
   const [infor, setInfor] = useState({
     imgsrc: "",
     name: "",
     department: "",
+    abbreviation: "",
   });
-  useState(() => {});
+  const [fallbackColor, setFallbackColor] = useState<string>("#FFFFFF");
   useEffect(() => {
-    const decode: any = jwt.decode(clientSessionToken.value);
+    const img = localStorage.getItem("imgsrc") || "";
+    const name = getLastTwoWords(localStorage.getItem("name") || "");
+    const department = localStorage.getItem("department") || "";
+    const abbreviation = getInitials(name);
+    setFallbackColor(getRandomColor());
     setInfor({
-      imgsrc: decode.imgsrc,
-      name: decode.name,
-      department: decode.departmentId,
+      imgsrc: img,
+      name: name,
+      department: department,
+      abbreviation: abbreviation,
     });
   }, []);
 
   const router = useRouter();
-  const handleLogout = useCallback(() => {
-    const highestId = window.setTimeout(() => {}, 0);
-    for (let i = highestId; i >= 0; i--) {
-      window.clearTimeout(i);
-    }
-    const itemsToClear = ["isPageLoaded", "accessToken", "isLoggedIn"];
-    itemsToClear.forEach((item) => localStorage.removeItem(item));
-
-    router.replace("/login");
-  }, [router]);
+  const handleLogout = async () => {
+    await authApiRequests.logout();
+    router.push("/login");
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <div className="flex justify-center items-center h-full w-[180px] gap-4 cursor-pointer hover:bg-gray-200 rounded-sm">
+        <div className="flex justify-center items-center h-full w-[160px] gap-4 cursor-pointer hover:bg-gray-200 rounded-sm">
           <Avatar className="w-9 h-9">
             <AvatarImage
               src={infor.imgsrc}
               alt="avartar"
               className="rounded-full w-9 h-9"
             />
-            <AvatarFallback>CN</AvatarFallback>
+            <AvatarFallback
+              style={{
+                backgroundColor: fallbackColor,
+                borderRadius: "50%", // Bo tròn hoàn toàn
+              }}
+              className="rounded-full w-9 h-9 flex items-center justify-center text-white font-bold"
+            >
+              {infor.abbreviation}
+            </AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
             <span className="text-xs leading-3 text-blue-600 font-semibold">

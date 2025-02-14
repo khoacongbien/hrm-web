@@ -1,6 +1,7 @@
 "use client";
 import envConfig from "@/config";
 import { LoginResType } from "@/schemaValidations/auth.schema";
+import { normalizePath } from "./utils";
 
 type CustomOptions = Omit<RequestInit, "method"> & {
   baseUrl?: string | undefined;
@@ -97,7 +98,7 @@ const request = async <Response>(
     status: res.status,
     payload,
   };
-  if (["/api/auth"].includes(url)) {
+  if ("api/auth" === normalizePath(url)) {
     if (data.payload.statusCode === 422) {
       throw new EntityError(
         data as {
@@ -121,11 +122,14 @@ const request = async <Response>(
     }
   }
 
-  if (["/api/auth"].includes(url)) {
-    clientSessionToken.value = (payload as LoginResType).data.token;
-  } else if (["auth/logout"].includes(url)) {
-    clientSessionToken.value = "";
+  if (typeof window !== "undefined") {
+    if ("api/auth" === normalizePath(url)) {
+      clientSessionToken.value = (payload as LoginResType).data.token;
+    } else if ("auth/logout" === normalizePath(url)) {
+      clientSessionToken.value = "";
+    }
   }
+
   return data;
 };
 
